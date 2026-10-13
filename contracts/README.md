@@ -2,7 +2,7 @@
 
 This directory holds the reference definitions for data that crosses a component boundary.
 The API, workers, and database migrations use these definitions.
-No schema files exist. G03 and R1 supply the first versions.
+Version 1 covers the TESS vertical slice. DECam records need a later contract version.
 
 ## Runtime boundary
 
@@ -19,17 +19,38 @@ The contracts in this directory are the only coupling between the API and worker
 
 ## Contracts
 
-| Contract | Producer | Consumer | Content |
-|---|---|---|---|
-| Job | API | Workers | Contract version, run, method and method version, parameters with units, input references, and resource limits. |
-| Result | Workers | API | Contract version, producing job, measurements with units and uncertainty, artifact references, quality flags, and outcome. |
-| Method parameters | This directory | API and workers | Parameter names, units, types, allowed ranges, and defaults for each method version. |
-| Records | Database migrations | API and workers | Tables, columns, constraints, and states. |
+| Contract | File | Producer | Consumer | Content |
+|---|---|---|---|---|
+| Job | `job/v1.schema.json` | API or worker | Workers | Contract version, run, method and method version, parameters, input references, and resource limits. |
+| Result | `result/v1.schema.json` | Workers | API | Outcome, measurements with units and uncertainty, artifact references, diagnostics, resources, and software versions. |
+| Method parameters | `methods/<method-id>/v1.schema.json` | This directory | API and workers | Parameter names, units, types, ranges, defaults, and scientific status for each method version. |
+| Columnar artifact | `artifacts/columns/v1.schema.json` | Workers | API and frontend | Equal-length named arrays with units and time conventions. |
+| Records | `../migrations/` | Database migrations | API and workers | Tables, columns, constraints, and states. |
 
 Method parameter schemas live here so that the API can validate requests without a running worker.
 The backend owns the HTTP interface between the backend and frontend. That interface is not a contract in this directory.
 
-## Planned layout
+## Methods
+
+| Method | Kind | Scientific status |
+|---|---|---|
+| `tess-spoc-index` v1 | Index | Ingestion only. No scientific calculation. |
+| `tess-bls` v1 | Analysis | Provisional. The defaults are the fixed T01 settings. Depth accuracy, completeness, and false-alarm rates are not validated. |
+
+Each method schema carries an `x-method` object with its summary, scientific basis, and status.
+Numeric parameters carry an `x-unit` annotation.
+JSON Schema does not apply `default` values. The API fills defaults before it writes a job document.
+`x-constraints` lists rules between fields that JSON Schema cannot express. The API and the worker both check them.
+
+## Conventions
+
+- A unit string of `"1"` marks a dimensionless value.
+- A time value carries `time_scale` and `time_reference`. TESS times use `tdb` and `BJD 2457000.0`.
+- A measurement has a standard uncertainty or an `unavailable` uncertainty with a reason.
+- A `search` measurement comes from the blind method. A `reference_comparison` measurement compares the saved search output with a known object.
+- Artifact paths are relative to the artifact storage root. A `gzip` artifact is stored compressed.
+
+## Layout
 
 ```text
 contracts/
@@ -37,12 +58,14 @@ contracts/
 ├── job/v1.schema.json
 ├── result/v1.schema.json
 ├── methods/<method-id>/v1.schema.json
-└── examples/
+├── artifacts/columns/v1.schema.json
+└── examples/<job|result|methods|artifacts>/<name>.<valid|invalid>.json
 ```
 
 Schemas use JSON Schema, draft 2020-12.
-Examples come from real G03 records for DECam and T01.
+The `tess-bls` job and result examples come from the closed T01 record for WASP-18 b.
 Each schema has at least one valid example and one invalid example.
+`scripts/check_contracts.py` checks every schema and example.
 
 ## Versions
 
@@ -60,9 +83,9 @@ A contract version and the database migrations that it needs release together in
 
 ## Consumers
 
-The API and workers pin a release tag of this repository.
-Each consumer copies or generates its models from the pinned schemas.
-Generated models are build outputs. The schema files are the source.
+The API and workers pin a commit or release tag of this repository.
+Each consumer copies the pinned `contracts/` directory into `vendor/contracts/` with `scripts/sync_contracts.sh`.
+The copy records the source commit in `vendor/contracts/SOURCE`.
 Consumers do not import code from sibling repositories.
 Each consumer tests its output documents against the pinned schemas and examples.
 
