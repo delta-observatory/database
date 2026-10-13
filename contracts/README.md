@@ -2,7 +2,7 @@
 
 This directory holds the reference definitions for data that crosses a component boundary.
 The API, workers, and database migrations use these definitions.
-No schema files exist yet. G03 and R1 supply the first versions.
+No schema files exist. G03 and R1 supply the first versions.
 
 ## Runtime boundary
 
