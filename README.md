@@ -25,6 +25,11 @@ The current scope is the TESS vertical slice: one index method and one transit-s
 | `job` | One unit of execution. The table is also the work queue. `document` holds a `job/1` document and `result` holds a `result/1` document. |
 | `measurement` | One calculated quantity with unit, uncertainty or the reason it is unavailable, and quality flags. |
 | `artifact` | One stored file, relative to the artifact storage root, with size and SHA-256. |
+| `client` | One API client: a person, an agent, or a service. It has a name, a kind, permissions, and the SHA-256 of its bearer token. A disabled client cannot authenticate. |
+
+`run.client_id` records the client that created a run. `job.cancelled_by` records the client that cancelled a job.
+The permissions are `read`, `run.submit`, `record.write`, `acquire`, `identity.reveal`, and `admin`.
+A check constraint prevents an agent from holding `acquire`, `identity.reveal`, or `admin`.
 
 Workers claim queued jobs with `SELECT … FOR UPDATE SKIP LOCKED` and hold a lease while they execute.
 A worker that stops without a result leaves an expired lease, and another worker can claim the job again.
