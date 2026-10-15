@@ -27,9 +27,16 @@ The current scope is the TESS vertical slice: one index method and one transit-s
 | `artifact` | One stored file, relative to the artifact storage root, with size and SHA-256. |
 | `client` | One API client: a person, an agent, or a service. It has a name, a kind, permissions, and the SHA-256 of its bearer token. A disabled client cannot authenticate. |
 
+| `campaign` | A research campaign: question, blinding level, budgets, the checksum of the approved campaign file, and the approval, decisions-fixed, reveal, and close events. |
+| `campaign_read` | One row for each distinct observation whose data a campaign read. The observation budget counts these rows. |
+| `access_event` | A read or a refused read of an observation that a cohort reservation protects, with client, campaign, reservation, and operation. |
+
 `run.client_id` records the client that created a run. `job.cancelled_by` records the client that cancelled a job.
 The permissions are `read`, `run.submit`, `record.write`, `acquire`, `identity.reveal`, and `admin`.
 A check constraint prevents an agent from holding `acquire`, `identity.reveal`, or `admin`.
+An agent client belongs to one campaign (`client.campaign_id`). A run of an agent records its campaign (`run.campaign_id`).
+Blinding levels are `open`, `labels`, and `labels_identity`. The default is `labels_identity`.
+Check constraints keep the event order: approval, then decisions fixed, then reveal. Approval needs the campaign file checksum. A reveal needs a reason.
 
 Workers claim queued jobs with `SELECT … FOR UPDATE SKIP LOCKED` and hold a lease while they execute.
 A worker that stops without a result leaves an expired lease, and another worker can claim the job again.
