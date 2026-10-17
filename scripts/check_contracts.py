@@ -3,6 +3,8 @@
 Each schema must be a valid draft 2020-12 schema. Each example file name
 ends in .valid.json or .invalid.json, and the result must match the name.
 Method parameter defaults must form a valid parameter document.
+Record schemas refer to records/common/v1.schema.json. A registry of every
+schema, keyed by its $id, resolves those references.
 
 Run: uv run --with jsonschema==4.25.1 python scripts/check_contracts.py
 """
@@ -10,7 +12,8 @@ from pathlib import Path
 import json
 import sys
 
-from jsonschema import Draft202012Validator
+from jsonschema import Draft202012Validator, FormatChecker
+from referencing import Registry, Resource
 
 ROOT = Path(__file__).resolve().parents[1] / 'contracts'
 EXAMPLE_SCHEMA = {
@@ -31,12 +34,16 @@ def defaults(schema):
     return schema['default']
 
 
-def method_schema(example):
-    # examples/methods/<method-id>-<label>.<valid|invalid>.json
-    for path in sorted((ROOT / 'methods').iterdir(), key=lambda p: -len(p.name)):
+def prefixed_schema(example, kind):
+    # examples/<methods|records>/<schema-directory>-<label>.<valid|invalid>.json
+    for path in sorted((ROOT / kind).iterdir(), key=lambda p: -len(p.name)):
         if example.name.startswith(path.name + '-'):
             return path / 'v1.schema.json'
-    raise SystemExit(f'no method schema for {example}')
+    raise SystemExit(f'no {kind} schema for {example}')
+
+
+def validator(schema, registry):
+    return Draft202012Validator(schema, registry=registry, format_checker=FormatChecker())
 
 
 def main():
@@ -44,6 +51,7 @@ def main():
     schemas = sorted(ROOT.rglob('*.schema.json'))
     for path in schemas:
         Draft202012Validator.check_schema(load(path))
+    registry = Registry().with_resources((load(p)['$id'], Resource.from_contents(load(p))) for p in schemas)
     for path in sorted((ROOT / 'methods').glob('*/v*.schema.json')):
         schema = load(path)
         errors = list(Draft202012Validator(schema).iter_errors(defaults(schema)))
@@ -52,8 +60,8 @@ def main():
     examples = sorted((ROOT / 'examples').rglob('*.json'))
     for path in examples:
         kind = path.parent.name
-        schema_path = method_schema(path) if kind == 'methods' else ROOT / EXAMPLE_SCHEMA[kind]
-        errors = list(Draft202012Validator(load(schema_path)).iter_errors(load(path)))
+        schema_path = prefixed_schema(path, kind) if kind in ('methods', 'records') else ROOT / EXAMPLE_SCHEMA[kind]
+        errors = list(validator(load(schema_path), registry).iter_errors(load(path)))
         expected_valid = path.name.endswith('.valid.json')
         if not expected_valid and not path.name.endswith('.invalid.json'):
             failures.append(f'{path}: name must end in .valid.json or .invalid.json')
