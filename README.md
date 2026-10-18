@@ -20,8 +20,8 @@ The research records for agent work are candidates, assessments, decisions, note
 | Table | Meaning |
 |---|---|
 | `dataset` | One dataset directory in `raw/`, with its index state and findings. |
-| `observation` | One distinct file content. A changed file at the same path gets a new row, and the earlier row becomes `missing`. |
-| `run` | An immutable method version, parameter set, and input selection. |
+| `observation` | One distinct file content. A changed file at the same path gets a new row, and the earlier row becomes `missing`. `provenance` names the selection manifest, owner, source identifier, and registration of a selected file. |
+| `run` | An immutable method version, parameter set, and input selection. `retry_of` names the earlier run that a retry run repeats. |
 | `run_input` | The observations that a run reads. |
 | `job` | One unit of execution. The table is also the work queue. `document` holds a `job/1` document and `result` holds a `result/1` document. |
 | `measurement` | One calculated quantity with unit, uncertainty or the reason it is unavailable, and quality flags. |
@@ -50,6 +50,7 @@ Check constraints keep the event order: approval, then decisions fixed, then rev
 [contracts/records/](contracts/README.md#research-records) defines the documents that clients and workers write.
 Candidates, assessments, decisions, notes, links, and the observations of a candidate do not change after the insert.
 A correction is a new record. An assessment or a decision can name the record that it corrects in `supersedes`.
+A candidate, assessment, decision, or note can have an `import_key`. A unique index refuses a second record with the same key.
 
 | Axis | Statuses | Basis |
 |---|---|---|
@@ -92,6 +93,17 @@ A finished task does not change. The campaign, writer, and work description of a
 Workers claim queued jobs with `SELECT … FOR UPDATE SKIP LOCKED` and hold a lease while they execute.
 A worker that stops without a result leaves an expired lease, and another worker can claim the job again.
 An insert of a queued job sends `NOTIFY delta_jobs` with the job ID.
+A job in a finished state (`complete`, `inconclusive`, `failed`, or `cancelled`) does not change. A trigger refuses the update with `RC002`.
+
+The API can cancel a queued job or a running job. It sets the state `cancelled`.
+The worker that holds a running job loses the lease at its next lease extension, at most one third of the lease length later.
+The worker then stops the method process and discards the output of the attempt.
+The files of that attempt stay on disk without artifact rows. The worker time of a cancelled job is not recorded.
+A method does not resume partial work. A worker restart returns its running job to the queue, and the next attempt starts again.
+
+A retry run repeats the `failed` and `cancelled` jobs of an earlier run in a new run.
+A trigger requires the same method version, parameters, and campaign. It refuses another run with `RC003`.
+The completed jobs of the earlier run stay, and the retry does not repeat them. Measurements are therefore not duplicated.
 A unique index permits one job for each observation in a run.
 A second unique index permits one waiting or running index job for each dataset.
 

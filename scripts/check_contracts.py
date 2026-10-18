@@ -20,7 +20,9 @@ EXAMPLE_SCHEMA = {
     'job': 'job/v1.schema.json',
     'result': 'result/v1.schema.json',
     'artifacts': 'artifacts/columns/v1.schema.json',
+    'exports': 'exports/manifest/v1.schema.json',
 }
+PREFIXED = ('methods', 'records', 'inputs')
 
 
 def load(path):
@@ -35,7 +37,7 @@ def defaults(schema):
 
 
 def prefixed_schema(example, kind):
-    # examples/<methods|records>/<schema-directory>-<label>.<valid|invalid>.json
+    # examples/<methods|records|inputs>/<schema-directory>-<label>.<valid|invalid>.json
     for path in sorted((ROOT / kind).iterdir(), key=lambda p: -len(p.name)):
         if example.name.startswith(path.name + '-'):
             return path / 'v1.schema.json'
@@ -60,7 +62,7 @@ def main():
     examples = sorted((ROOT / 'examples').rglob('*.json'))
     for path in examples:
         kind = path.parent.name
-        schema_path = prefixed_schema(path, kind) if kind in ('methods', 'records') else ROOT / EXAMPLE_SCHEMA[kind]
+        schema_path = prefixed_schema(path, kind) if kind in PREFIXED else ROOT / EXAMPLE_SCHEMA[kind]
         errors = list(validator(load(schema_path), registry).iter_errors(load(path)))
         expected_valid = path.name.endswith('.valid.json')
         if not expected_valid and not path.name.endswith('.invalid.json'):
