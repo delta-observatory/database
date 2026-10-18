@@ -1,5 +1,7 @@
 # Delta Observatory database
 
+This repository is one component of [Delta Observatory](https://github.com/delta-observatory/delta-observatory). The entry repository describes the application and restores every component.
+
 This repository owns the PostgreSQL schema, migrations, constraints, and record semantics.
 It also owns the [cross-component contracts](contracts/README.md) for jobs, results, method parameters, and records.
 The current scope is the TESS vertical slice: one index method and one transit-search method.
@@ -114,3 +116,7 @@ uv run -q --no-project --with jsonschema==4.25.1 python scripts/check_contracts.
 ```
 
 Apply migrations in the cluster with `kubernetes/scripts/migrate.sh <database-image-tag>`.
+
+## License
+
+The code is under the [MIT License](LICENSE).
