@@ -157,3 +157,13 @@ Each consumer tests its output documents against the pinned schemas and examples
 Define job, result, method-parameter, and record shapes only in this repository.
 Do not write these shapes by hand in `backend/` or `workers/`.
 Change the contract here first. Then update each consumer.
+
+## Bounded archive acquisition
+
+`acquisition-request/1` selects one TIC target and at most eight TESS sectors.
+The request sets file, byte, and free-space limits.
+`acquisition-manifest/1` identifies exact public MAST products before approval.
+`acquisition-result/1` records completed files, SHA-256 checksums, and failures.
+The worker checks FITS checksums and compatibility before indexing an acquired file.
+Only a person can approve the exact manifest checksum.
+The worker preserves completed files when an incomplete transfer repeats.
