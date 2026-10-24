@@ -167,3 +167,12 @@ The request sets file, byte, and free-space limits.
 The worker checks FITS checksums and compatibility before indexing an acquired file.
 Only a person can approve the exact manifest checksum.
 The worker preserves completed files when an incomplete transfer repeats.
+
+## Managed agent sessions
+
+`agent-session/1` records provider identity, the approved revision, connection state, consent, and measured usage.
+A session has a separate client with campaign scope.
+The API reserves each turn against the approved investigation limits.
+Usage notifications stop further tools and turns when the measured token limit is reached.
+Provider notifications can arrive after token use. The limit is not a provider spending guarantee.
+Credentials are not session fields and never enter these records.
