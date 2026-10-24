@@ -40,7 +40,8 @@ def prefixed_schema(example, kind):
     # examples/<methods|records|inputs>/<schema-directory>-<label>.<valid|invalid>.json
     for path in sorted((ROOT / kind).iterdir(), key=lambda p: -len(p.name)):
         if example.name.startswith(path.name + '-'):
-            return path / 'v1.schema.json'
+            version = 2 if example.name.startswith(path.name + '-v2-') else 1
+            return path / f'v{version}.schema.json'
     raise SystemExit(f'no {kind} schema for {example}')
 
 
