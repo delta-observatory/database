@@ -39,6 +39,11 @@ The research records for agent work are candidates, assessments, decisions, note
 | `note` | Free text about one or more records. |
 | `agent_task` | A unit of agent work in a campaign, with state, priority, lease, attempts, and its end. The table is also the queue of agent work. |
 | `record_link` | One reference from a candidate, assessment, decision, note, or agent task to a platform record or an external file. |
+| `investigation` | Product control state attached to the existing campaign identity. |
+| `investigation_revision` | Immutable plan document, parent revision, sequence, checksum, and writer. |
+| `investigation_approval` | A person's approval of an exact revision checksum. |
+| `investigation_execution` | An immutable link between an approved revision, a run, and a request key. |
+| `investigation_event` | Append-only investigation events with their writer and time. |
 
 `run.client_id` records the client that created a run. `job.cancelled_by` records the client that cancelled a job.
 The permissions are `read`, `run.submit`, `record.write`, `acquire`, `identity.reveal`, and `admin`.
