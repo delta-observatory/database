@@ -186,3 +186,10 @@ It preserves the original evidence without inserting copied measurement records 
 `reproduction-report/1` compares new measurements with the exported measurements.
 The fixed tolerances measure numerical agreement. They do not represent scientific uncertainty.
 The report records runtime agreement separately from numerical agreement.
+
+## Desktop storage and recovery
+
+`desktop-storage/1` sets the workspace size limit and free-space reserve.
+`desktop-backup/1` lists checked CSV table data, files, and migration hashes.
+A restore creates tables from trusted application migrations. It imports table values without running SQL from the backup.
+The restore preserves the source workspace and regenerates local access credentials.
